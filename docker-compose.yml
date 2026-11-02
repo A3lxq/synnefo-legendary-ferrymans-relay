@@ -1,0 +1,72 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: docker/web/Dockerfile
+    container_name: halcyon-legendary-web
+    environment:
+      - CTF_SECRET=${CTF_SECRET}
+    ports:
+      - "8006:5000"
+    networks:
+      - public-net
+      - internal-net
+
+  relay:
+    build:
+      context: .
+      dockerfile: docker/relay/Dockerfile
+    container_name: halcyon-legendary-relay
+    environment:
+      - CTF_SECRET=${CTF_SECRET}
+    # No published ports -- internal-only, reachable only via the pivot.
+    networks:
+      - internal-net
+    volumes:
+      - shared-vol:/shared
+
+  vault:
+    build:
+      context: .
+      dockerfile: docker/vault/Dockerfile
+    container_name: halcyon-legendary-vault
+    environment:
+      - CTF_SECRET=${CTF_SECRET}
+    # No published ports at all -- reached only via the shared volume.
+    networks:
+      - internal-net
+    volumes:
+      - shared-vol:/shared
+      # INTENTIONALLY present, and the box's final intended privilege
+      # escalation: real access to the Docker daemon that's running this
+      # whole lab, i.e. a genuine container-escape primitive. Never do
+      # this on anything but your own isolated lab host.
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  # One-shot: populates the host-secrets volume, then exits. Not part of
+  # the attack surface itself -- this is the box's own setup step,
+  # equivalent to "a real host administrator already put this here."
+  init:
+    build:
+      context: .
+      dockerfile: docker/vault/Dockerfile
+    environment:
+      - CTF_SECRET=${CTF_SECRET}
+    entrypoint: ["/opt/init_hostsecrets.sh"]
+    volumes:
+      - host-secrets:/hostsecrets
+    networks:
+      - internal-net
+    restart: "no"
+
+networks:
+  public-net:
+    driver: bridge
+  internal-net:
+    driver: bridge
+    internal: true
+
+volumes:
+  shared-vol:
+  host-secrets:
+    name: halcyon-legendary-host-secrets
