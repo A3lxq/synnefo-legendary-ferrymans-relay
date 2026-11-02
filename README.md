@@ -33,29 +33,11 @@ privilege escalation.
 **This machine is intentionally vulnerable. Run it only on an isolated
 network**, per the warning above.
 
-## Requirements
+## Status
 
-- Docker + Docker Compose
-- A player machine with: `curl`, a browser, `strings` and `objdump`
-  (binutils — standard on any Linux box), basic familiarity with raw
-  TCP (`nc`/`netcat` works fine too, once you know the protocol)
-
-## Starting the box
-
-```
-./start.sh
-```
-Generates a fresh `.env` with a random per-deployment secret and brings
-all services up.
-
-- Web: http://localhost:8006
-- Relay and Vault: **not reachable from your host at all** — that's
-  intentional, and part of the challenge.
-
-The last stage (flag 9) spins up a throwaway `alpine` container the
-first time it runs — if that image isn't already cached on your
-machine, expect a short pause for the pull. That's just Docker being
-Docker, not part of the puzzle.
+This box ships as a VM appliance (OVA) — see the `vm/` directory once it's
+built. There is no Docker build in this repo (an earlier Docker build was
+removed; a Docker version may be added back separately).
 
 ## Flag format
 
@@ -74,3 +56,4 @@ Docker, not part of the puzzle.
 - [`docs/hints.md`](docs/hints.md) — progressive hints
 - [`docs/tools.md`](docs/tools.md) — what each tool is for
 - [`docs/writeup/WRITEUP.md`](docs/writeup/WRITEUP.md) — full spoiler walkthrough
+- [`flags/generate_flags.py`](flags/generate_flags.py) — the per-deployment flag derivation scheme, used by `organizer/verify.py`
