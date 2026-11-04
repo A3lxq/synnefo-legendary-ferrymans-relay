@@ -1,0 +1,39 @@
+#cloud-config
+# First-boot configuration for the Legendary (Ferryman's Relay) CTF
+# VM. Native OVA, but the box's own top-tier lesson IS a real
+# Docker-socket escape -- so Docker Engine runs INSIDE this one VM as
+# the deliberately-vulnerable target, not as this box's deployment
+# mechanism. The player only ever imports and powers on this OVA;
+# vm/scripts/remote-provision.sh (run over SSH) lays down and starts
+# the actual docker-compose stack on first provisioning.
+
+hostname: ferrymans-relay
+manage_etc_hosts: true
+
+users:
+  - name: ctfbuilder
+    gecos: "CTF build/maintenance account (instructor-only, key-based)"
+    groups: [sudo]
+    sudo: ["ALL=(ALL) NOPASSWD:ALL"]
+    shell: /bin/bash
+    lock_passwd: true
+    ssh_authorized_keys:
+      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKdkeCYqlhw6ffAJVjsY6IiGXJ9uiz0ZJUP6zw63aUZx ctf-instructor-build-key"
+
+chpasswd:
+  expire: false
+
+ssh_pwauth: false
+disable_root: true
+
+package_update: true
+package_upgrade: false
+packages:
+  - docker.io
+  - docker-compose-v2
+  - openssh-server
+  - sudo
+
+runcmd:
+  - [bash, -c, "systemctl enable --now docker"]
+  - [bash, -c, "echo 'cloud-init base config applied' > /var/log/ctf-cloudinit.log"]

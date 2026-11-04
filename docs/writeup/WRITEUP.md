@@ -5,12 +5,17 @@ secrets. Replace with what your own instance gives you.
 
 1. View-source `/` → HTML comment.
 2. `curl -d "username=relay_ops&password=ferryman2024" http://TARGET:8006/login`
-   → flag 2, plus a download link for `relay-client`.
-3. `strings relay-client` shows `FERRY1` (the protocol magic) and
+   → flag 2, plus a download link for `relay-client`. The same
+   username/password also works over SSH, on port 2206 — that's the
+   real foothold this box uses throughout (no plain HTTP route can
+   reach `relay` at all).
+3. `ssh -p 2206 relay_ops@TARGET`, then from that shell:
+   `curl -s http://localhost:5000/downloads/relay-client -o relay-client; chmod +x relay-client`.
+   `strings relay-client` shows `FERRY1` (the protocol magic) and
    `VERSION`/`STATUS`/`RUN` (command names), plus a usage string
-   confirming `<host> <port> <COMMAND> [args]`. From a shell with
-   network access to `relay` (e.g. inside the web container, or via
-   `nc`): `./relay-client relay 9099 VERSION` → flag 3.
+   confirming `<host> <port> <COMMAND> [args]`. Still from that SSH
+   shell (it can reach `relay` over the stack's own internal network):
+   `./relay-client relay 9099 VERSION` → flag 3.
 4. `strings` also shows a plausible-looking `FR-0001-LEGACY` string —
    that one is a honeypot, explicitly unused (see
    `relay_client.c`'s own comment once you have the source, or just

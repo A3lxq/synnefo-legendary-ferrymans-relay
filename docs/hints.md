@@ -3,12 +3,15 @@
 **Flag 1** — View page source on `/`.
 
 **Flag 2** — A generic staff-login guess works here too; it also gets
-you the download link for `relay-client`.
+you the download link for `relay-client`. The same password works
+somewhere else too — somewhere that gives you an actual shell.
 
-**Flag 3** — Run `strings` on the downloaded binary. You'll see a magic
-word, some command names, and a usage string. Try the simplest command
-with no extra arguments against `relay` on port 9099 (nc, or the binary
-itself — `./relay-client relay 9099 VERSION`).
+**Flag 3** — `relay` isn't reachable from outside at all — you need a
+real foothold first. SSH to Web itself (same username/password as the
+login page) and fetch `relay-client` from there. Run `strings` on the
+binary. You'll see a magic word, some command names, and a usage
+string. Try the simplest command with no extra arguments:
+`./relay-client relay 9099 VERSION`.
 
 **Flag 4** — One command needs an auth token. `strings` shows you
 *something* that looks like one — read the comment near it carefully.

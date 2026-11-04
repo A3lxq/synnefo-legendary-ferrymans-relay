@@ -3,6 +3,7 @@
 | Tool | What it's for here |
 |---|---|
 | curl / browser | Recon, login, downloading the client binary. |
+| `ssh` | The real foothold: the web login's password also works for a shell on the Web host itself — that shell is what can actually reach Relay. |
 | `strings` | First pass over the downloaded `relay-client` binary — the protocol's magic header and command names are plain text; a decoy "token" is too (read it carefully). |
 | `objdump -d` | Disassemble `relay-client` to find `decode_token`'s XOR routine and key, and to recover the real auth token. |
 | `nc` / the `relay-client` binary itself | Speak the reversed protocol to the relay service once you know its magic/commands/token. |

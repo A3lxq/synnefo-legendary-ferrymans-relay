@@ -12,6 +12,30 @@ mounted in). A fourth, one-shot **init** service populates a named
 volume (`halcyon-legendary-host-secrets`) that nothing else in the box
 mounts, then exits — not part of the attack surface.
 
+**Shipped as ONE native OVA, not a separate Docker deployment.**
+Docker Engine runs *inside* that one VM as this box's deliberately-
+vulnerable target (installed by cloud-init, the compose stack started
+by a systemd unit on boot) — not as the box's own deployment
+mechanism. A player just imports and powers on the OVA, same as every
+other box in this series. This means the docker.sock escape in stages
+8-9 reaches that one VM's own Docker engine, not any shared host —
+contained to the player's own disposable VM. See `vm/` for the build.
+
+**Design gap fixed during the native rebuild** (not a Docker-vs-native
+issue, just a real bug found then): the original design had no actual
+way for a player to reach Relay's port 9099 at all (never published,
+no shell anywhere) — `tests/solve.sh` papered over this with
+`docker exec`/`docker cp`, which isn't something a real player could
+do. Fixed by adding a real `relay_ops` SSH account on Web (port 2206),
+reusing the same password the `/login` page discloses (a believable
+password-reuse lesson) — the player logs in, re-downloads
+`relay-client` from `localhost:5000` (Web's own internal port, not the
+externally-mapped one), and runs it from there, able to reach Relay
+over the stack's own internal network. **flag8.txt had to be tightened
+from `chmod 644` to `chmod 600` + `chown root:root`** once Web got a
+real shell — otherwise the new `relay_ops` account could just `cat` it
+directly, skipping the entire Vault/docker.sock chain.
+
 | # | Host | Difficulty | Concept taught | Primary tool(s) | Where it lives |
 |---|---|---|---|---|---|
 | 1 | Web | Easy | Reading page source | curl/browser | HTML comment on `/` |
@@ -42,10 +66,17 @@ mounts, then exits — not part of the attack surface.
 - Vault's poller (`docker/vault/poller.sh`) executes anything dropped at
   `/shared/task.sh` with zero validation — the entire container-escape
   mechanism.
-- `docker-compose.yml` mounts the REAL host's `/var/run/docker.sock`
-  into vault. This is the box's whole final act, and also means running
-  this box hands a player real control of whatever machine runs it —
-  **never deploy this on shared/multi-tenant infrastructure.**
+- `docker-compose.yml` mounts `/var/run/docker.sock` into vault. This
+  is the box's whole final act. In the shipped OVA, that socket
+  belongs to the Docker engine running inside the player's own VM, so
+  the escape is contained there — same as any other container-escape
+  lab. If you ever run this `docker-stack/` directly on bare metal
+  instead of inside the VM, that stops being true: it mounts whatever
+  machine actually runs `docker compose up`, so never do that on
+  shared/multi-tenant infrastructure.
+- `alpine` is pre-pulled during provisioning (`docker pull alpine`)
+  so flag 9's throwaway container never needs live internet access
+  during actual play -- this box is meant to run fully isolated.
 - Debian's packaged `docker.io` CLI negotiates an old API version many
   real daemons now reject ("client version ... is too old"). Fixed via
   `DOCKER_API_VERSION=1.44` in the poller's own supervisord environment
