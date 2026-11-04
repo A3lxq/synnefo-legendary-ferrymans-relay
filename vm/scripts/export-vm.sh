@@ -16,6 +16,9 @@ if [ ! -f "$DISK" ]; then
   exit 1
 fi
 
+echo "== Trimming freed blocks on the guest (docker builder prune, apt clean, etc. leave stale data in the qcow2 otherwise) =="
+ssh -i keys/ctfbuilder_ed25519 -p 2260 -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null ctfbuilder@127.0.0.1 "sudo fstrim -av" || true
+
 echo "== Stopping the VM (export needs the disk's write lock) =="
 ./scripts/stop-vm.sh
 

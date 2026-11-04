@@ -1,7 +1,19 @@
+FROM debian:12-slim AS builder
+RUN apt-get update -qq && apt-get install -y --no-install-recommends -qq gcc libc6-dev \
+    && rm -rf /var/lib/apt/lists/*
+# Compile the relay-client binary players download and reverse-engineer,
+# in a throwaway build stage -- gcc/libc6-dev never end up in the final
+# image, only the compiled binary does.
+COPY docker/client-src/relay_client.c /opt/build/relay_client.c
+# Deliberately NOT stripped -- symbol names (main, decode_token, etc.)
+# stay intact so `strings`/`objdump -d` are approachable for "light"
+# reverse engineering, not an unpacking exercise.
+RUN gcc -O0 -g0 -o /opt/relay-client /opt/build/relay_client.c
+
 FROM debian:12-slim
 
 RUN apt-get update -qq && apt-get install -y --no-install-recommends -qq \
-        python3 python3-venv python3-pip supervisor gcc libc6-dev \
+        python3 python3-venv python3-pip supervisor \
         openssh-server curl \
     && rm -rf /var/lib/apt/lists/*
 
@@ -20,13 +32,7 @@ COPY docker/web/requirements.txt /opt/app/requirements.txt
 RUN /opt/venv/bin/pip install -q --no-cache-dir --retries 10 --timeout 120 \
         -r /opt/app/requirements.txt
 
-# Compile the relay-client binary players download and reverse-engineer.
-COPY docker/client-src/relay_client.c /opt/build/relay_client.c
-# Deliberately NOT stripped -- symbol names (main, decode_token, etc.)
-# stay intact so `strings`/`objdump -d` are approachable for "light"
-# reverse engineering, not an unpacking exercise.
-RUN gcc -O0 -g0 -o /opt/web/downloads/relay-client /opt/build/relay_client.c && \
-    rm -rf /opt/build
+COPY --from=builder /opt/relay-client /opt/web/downloads/relay-client
 
 COPY docker/generate_flags.py /opt/shared/generate_flags.py
 COPY docker/web/app.py /opt/app/app.py

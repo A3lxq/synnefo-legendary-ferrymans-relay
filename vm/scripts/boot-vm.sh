@@ -42,7 +42,7 @@ qemu-system-x86_64 \
   -cpu max \
   -m 2048 \
   -smp 2 \
-  -drive file="$DISK",if=virtio,format=qcow2 \
+  -drive file="$DISK",if=virtio,format=qcow2,discard=unmap,detect-zeroes=unmap \
   -drive file="$SEED",if=virtio,format=raw \
   -netdev user,id=net0,hostfwd=tcp:127.0.0.1:2260-:22,hostfwd=tcp:127.0.0.1:8006-:8006,hostfwd=tcp:127.0.0.1:2206-:2206 \
   -device virtio-net-pci,netdev=net0 \
